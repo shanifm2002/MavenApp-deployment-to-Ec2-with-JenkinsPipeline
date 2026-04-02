@@ -3,7 +3,12 @@ pipeline {
 
     tools {
         maven 'maven'
-        jdk 'jdk-21' 
+    }
+
+    environment {
+        // This is the standard path for the Ubuntu openjdk-21-jdk package
+        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
+        PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
     }
 
     stages {
@@ -16,26 +21,16 @@ pipeline {
 
         stage('Verify Environment') {
             steps {
-                script {
-                    def jdkHome = tool 'jdk-21'
-                    withEnv(["JAVA_HOME=${jdkHome}", "PATH=${jdkHome}/bin:${env.PATH}"]) {
-                        sh 'java -version'
-                        sh 'javac -version'
-                        sh 'mvn -version'
-                    }
-                }
+                // This MUST return a version now that you've installed the JDK
+                sh 'java -version'
+                sh 'javac -version'
+                sh 'mvn -version'
             }
         }
 
         stage('Build') {
             steps {
-                script {
-                    def jdkHome = tool 'jdk-21'
-                    // We force the PATH here so 'javac' is definitely version 21
-                    withEnv(["JAVA_HOME=${jdkHome}", "PATH=${jdkHome}/bin:${env.PATH}"]) {
-                        sh 'mvn clean package -DskipTests'
-                    }
-                }
+                sh 'mvn clean package -DskipTests'
             }
         }
 
@@ -53,19 +48,9 @@ pipeline {
                             pkill -f demo-1.0.0.jar || true
                             nohup java -jar /opt/app/demo-1.0.0.jar > /opt/app/app.log 2>&1 &
 EOF
-                        echo "Deployment command executed successfully"
                     '''
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            echo "Successfully deployed to EC2."
-        }
-        failure {
-            echo "Build failed. Ensure 'jdk-21' is correctly configured in Jenkins Global Tool Configuration."
         }
     }
 }
