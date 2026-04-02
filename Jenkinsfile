@@ -3,6 +3,7 @@ pipeline {
 
     tools {
         maven 'maven'
+        jdk 'jdk-17'
     }
 
     stages {
@@ -16,20 +17,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh '''
-                    echo "Setting Java 21..."
-
-                    export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-                    export PATH=$JAVA_HOME/bin:$PATH
-
-                    echo "JAVA VERSION:"
-                    java -version
-
-                    echo "MAVEN VERSION:"
-                    mvn -version
-
-                    mvn clean package
-                '''
+                sh 'mvn clean package'
             }
         }
 
