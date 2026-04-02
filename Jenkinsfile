@@ -3,7 +3,7 @@ pipeline {
 
     tools {
         maven 'maven'
-        jdk 'jdk-21' // Ensure this name matches exactly in Manage Jenkins > Tools
+        jdk 'jdk-21' 
     }
 
     stages {
@@ -16,15 +16,26 @@ pipeline {
 
         stage('Verify Environment') {
             steps {
-                // Testing the tools provided by the 'tools' block
-                sh 'java -version'
-                sh 'mvn -version'
+                script {
+                    def jdkHome = tool 'jdk-21'
+                    withEnv(["JAVA_HOME=${jdkHome}", "PATH=${jdkHome}/bin:${env.PATH}"]) {
+                        sh 'java -version'
+                        sh 'javac -version'
+                        sh 'mvn -version'
+                    }
+                }
             }
         }
 
         stage('Build') {
             steps {
-                sh 'mvn clean package'
+                script {
+                    def jdkHome = tool 'jdk-21'
+                    // We force the PATH here so 'javac' is definitely version 21
+                    withEnv(["JAVA_HOME=${jdkHome}", "PATH=${jdkHome}/bin:${env.PATH}"]) {
+                        sh 'mvn clean package -DskipTests'
+                    }
+                }
             }
         }
 
@@ -39,10 +50,7 @@ pipeline {
 
                         echo "Starting application on EC2..."
                         ssh -o StrictHostKeyChecking=no ubuntu@18.232.187.168 << 'EOF'
-                            # Kill previous instance if running
                             pkill -f demo-1.0.0.jar || true
-                            
-                            # Run the new jar in the background
                             nohup java -jar /opt/app/demo-1.0.0.jar > /opt/app/app.log 2>&1 &
 EOF
                         echo "Deployment command executed successfully"
@@ -54,10 +62,10 @@ EOF
 
     post {
         success {
-            echo "Deployment completed successfully."
+            echo "Successfully deployed to EC2."
         }
         failure {
-            echo "Build or Deployment failed. Review the console output above."
+            echo "Build failed. Ensure 'jdk-21' is correctly configured in Jenkins Global Tool Configuration."
         }
     }
 }
