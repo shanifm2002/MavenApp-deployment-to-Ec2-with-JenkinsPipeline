@@ -3,16 +3,10 @@ pipeline {
 
     tools {
         maven 'maven'
-        jdk 'jdk-21'
-    }
-
-    environment {
-        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
-        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+        jdk 'jdk-21' // Ensure this name matches exactly in Manage Jenkins > Tools
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 git branch: 'main',
@@ -20,10 +14,9 @@ pipeline {
             }
         }
 
-        stage('Verify Java & Maven') {
+        stage('Verify Environment') {
             steps {
-                sh 'echo JAVA_HOME=$JAVA_HOME'
-                sh 'which java'
+                // Testing the tools provided by the 'tools' block
                 sh 'java -version'
                 sh 'mvn -version'
             }
@@ -46,11 +39,12 @@ pipeline {
 
                         echo "Starting application on EC2..."
                         ssh -o StrictHostKeyChecking=no ubuntu@18.232.187.168 << 'EOF'
+                            # Kill previous instance if running
                             pkill -f demo-1.0.0.jar || true
-                            nohup java -jar /opt/app/demo-1.0.0.jar \
-                                > /opt/app/app.log 2>&1 &
-                        EOF
-
+                            
+                            # Run the new jar in the background
+                            nohup java -jar /opt/app/demo-1.0.0.jar > /opt/app/app.log 2>&1 &
+EOF
                         echo "Deployment command executed successfully"
                     '''
                 }
@@ -63,7 +57,7 @@ pipeline {
             echo "Deployment completed successfully."
         }
         failure {
-            echo "Deployment failed. Check Jenkins or EC2 logs."
+            echo "Build or Deployment failed. Review the console output above."
         }
     }
 }
