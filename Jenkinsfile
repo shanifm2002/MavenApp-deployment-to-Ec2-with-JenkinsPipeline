@@ -6,12 +6,26 @@ pipeline {
         jdk 'jdk-21'
     }
 
+    environment {
+        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+    }
+
     stages {
 
         stage('Checkout') {
             steps {
                 git branch: 'main',
                     url: 'https://github.com/shanifm2002/MavenApp-deployment-to-Ec2-with-JenkinsPipeline.git'
+            }
+        }
+
+        stage('Verify Java & Maven') {
+            steps {
+                sh 'echo JAVA_HOME=$JAVA_HOME'
+                sh 'which java'
+                sh 'java -version'
+                sh 'mvn -version'
             }
         }
 
